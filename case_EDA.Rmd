@@ -1,0 +1,248 @@
+---
+title: "case_EDA"
+author: "MDS"
+date: "March 29, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+####################
+ Explore Data Frame
+###################
+
+```{r library, echo=F}
+library(ggplot2)
+library(dplyr)
+```
+
+Exploring Categorical Data 
+
+Reading Data From .CSV:
+
+```{r Read Data, echo=FALSE}
+comics <- read.csv('comics.csv')
+comics[1,]
+```
+
+1.Print the first 5 rows of the data using head()
+2.Check the structure of the data
+
+```{r Read Data(2), echo=F}
+head(comics, 5)
+str(comics)
+```
+
+Check levels
+
+```{r levels, echo=F}
+# Check levels of align
+levels(comics$align)
+# levels(comics$gender)
+```
+
+Create a 2-way contingency table: tab
+
+```{r table, echo=F}
+tab <- table(comics$align,comics$gender )
+tab
+```
+
+
+Bar Chart
+
+```{r bar_chart,echo=F}
+ggplot(comics, aes(x = gender, fill = align)) +
+  geom_bar()
+```
+
+Filtering
+
+```{r filter, echo=f}
+# Filter the data that has the fewest total of 'Align' entries
+comics_filtered <- comics %>%
+  filter(align != 'Reformed Criminals') %>%
+  droplevels()
+
+levels(comics_filtered$align)
+```
+
+Create side-by-side barchart of alignment by gender
+
+```{r Side_bar_chart, echo=F}
+ggplot(comics, aes(x = align, fill = gender)) + 
+  geom_bar(position = 'dodge') +
+  theme(axis.text.x = element_text(angle = 90))
+
+ggplot(comics, aes(x = gender, fill = align)) + 
+  geom_bar(position = 'dodge') +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+From counts to proportions
+
+```{r proportion}
+prop.table(tab,1) # condition on row
+prop.table(tab,2) # condition on column
+```
+
+Stack Bar Chart
+
+```{r stack_bar_chart, echo=FALSE}
+ggplot(comics, aes(x = gender, fill = align)) +
+  geom_bar(position = "fill")
+
+ggplot(comics, aes(x = align, fill = gender)) +
+  geom_bar(position = "fill")
+```
+
+Histogram, to check the distribution
+
+```{r histogram, echo=F}
+ggplot(comics, aes(x = align)) + 
+  geom_text(stat = "count",
+            aes(label = ..count..), vjust = -1) +
+  geom_bar()
+```
+
+Faceting: Plot of alignment broken down by gender
+
+```{r facet, echo=F}
+ggplot(comics, aes(x = align)) + 
+  geom_bar() +
+  facet_wrap(~ gender)
+```
+
+Exploring Numerical Data
+
+```{r cars, echo=F}
+cars <- read.csv('cars04.csv')
+head(cars)
+str(cars)
+```
+
+Plot a histogram of city_mpg faceted by suv, a logical variable indicating whether the car is an SUV or not. 
+
+```{r plot_car, echo=F}
+ggplot(cars, aes(x = city_mpg)) +
+  geom_histogram() + 
+  facet_wrap(~ suv)
+```
+
+A quick look at unique(cars$ncyl) shows that there are more possible levels of ncyl than you might think. Here, restrict your attention to the most common levels.
+
+```{r check,echo=F}
+#histogram
+ggplot(cars, aes(x = ncyl)) +
+  geom_histogram()
+
+#filter
+common_cyl <- filter(cars, ncyl %in% c(4, 6, 8))
+
+#boxplot
+ggplot(common_cyl, aes(x = as.factor(ncyl), y = city_mpg)) +
+  geom_boxplot()
+
+#density
+ggplot(common_cyl, aes(x = city_mpg, fill = as.factor(ncyl))) +
+  geom_density(alpha = .3)
+```
+
+Create a histogram of the distribution of horsepwr across all cars and add an appropriate title. Start by piping in the raw dataset.
+
+```{r histogram, eccho=F}
+cars %>%
+  ggplot(aes(horsepwr)) +
+  geom_histogram() +
+  ggtitle('horsepwr')
+```
+
+Create a second histogram of the distribution of horsepower, but only for those cars that have an msrp less than $25,000.Keep the limits of the x-axis so that they're similar to that of the first plot. Experiment with the bin and add a descriptive title.
+
+```{r play_bin, eccho=F}
+cars %>% 
+  filter(msrp<25000) %>%
+  ggplot(aes(horsepwr)) +
+  geom_histogram(bins=50) +
+  xlim(c(90, 550)) +
+  ggtitle('hrspwr')
+```
+
+```{r}
+# histogram
+cars %>%
+  ggplot(aes(msrp)) +
+  geom_histogram()
+
+# Construct box plot of msrp
+cars %>%
+  ggplot(aes(x = 1, y = msrp)) +
+  geom_boxplot()
+
+# Exclude outliers from data
+cars_no_out <- cars %>%
+  filter(msrp<100000)
+
+# Construct box plot of msrp using the reduced dataset
+cars_no_out %>%
+  ggplot(aes(x = 1, y = msrp)) +
+  geom_boxplot()
+```
+
+Summarize Numerical Data
+
+```{r}
+gapminder <- read.csv('gapminder.csv')
+
+# Create a dataset called gap2007 that contains only data from the year 2007.
+gap2007 <- filter(gapminder, year==2007)
+```
+
+group_by and summarize
+
+```{r}
+# Using gap2007, calculate the mean and median life expectancy for 
+# each country. Don't worry about naming the new columns produced by summarize().
+gap2007 %>%
+  group_by(cont) %>%
+  summarize(mean(life_exp),
+            median(life_exp),
+            var(life_exp),
+            sd(life_exp))
+
+# Confirm the trends that you see in the medians by 
+# generating side-by-side box plots of life expectancy for each continent.
+gap2007 %>%
+  ggplot(aes(x = cont, y = life_exp, fill=cont)) +
+  geom_boxplot()
+```
+
+```{r}
+# Checking distribution
+gap2007 %>%
+  ggplot(aes(x = life_exp, fill=cont)) +
+  geom_density(alpha=.3)
+
+gap2007 %>% 
+  ggplot(aes(x = cont, y = life_exp, fill=cont)) +
+  geom_boxplot()
+
+# Filtering data
+# Filter for Asia, add column indicating outliers
+gap_asia <- gap2007 %>%
+  filter(cont == "Asia") %>%
+  mutate(is_outlier = life_exp < 50)
+
+# Remove outliers, create box plot of lifeExp
+gap_asia %>%
+  ggplot(aes(x = life_exp, fill=cont)) +
+  geom_density(alpha=.3)
+
+gap_asia %>% 
+  filter(!is_outlier) %>%
+  ggplot(aes(x = 1, y = life_exp)) +
+  geom_boxplot()
+```
+
